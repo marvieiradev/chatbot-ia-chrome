@@ -1,0 +1,23 @@
+<div id="widget">
+    <button id="open-btn" class="btn" aria-label="Abrir chat">
+        <span class="btn-avatar-wrapper">
+            <img id="icon" alt="Chatbot" />
+            <span class="btn-badge">1</span>
+        </span>
+    </button>
+
+    <div class="chat-window" id="chat-window" style="display:none">
+        <div class="chat-header">
+            <img src="" alt="Bot logo" class="chat-header-logo" id="header-icon" />
+            <span class="chatbot-name" id="chatbot-name"></span>
+            <button class="close-btn" id="close-btn" aria-label="Close chat">&times;</button>
+        </div>
+        <div class="chat-body" id="messages">
+        </div>
+        <form class="chat-footer" id="form" autocomplete="off">
+            <input type="text" id="input" placeholder="Digite sua mensagem..." autocomplete="off" />
+            <button type="submit" id="submit">Enviar</button>
+            <button type="button" id="stop" alt="Parar parar geração de IA">🛑</button>
+        </form>
+    </div>
+</div>
