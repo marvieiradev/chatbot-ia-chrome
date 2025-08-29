@@ -6,6 +6,7 @@
  */
 
 export class ChatbotController {
+  #abortController;
   #chatbotView;
   #promptService;
 
@@ -35,37 +36,57 @@ export class ChatbotController {
     });
   }
 
-  #handleStop() {}
+  #handleStop() {
+    this.#abortController.abort();
+  }
 
   async #chatBotReply(userMsg) {
     this.#chatbotView.showTypingIndicator();
     this.#chatbotView.setInputEnabled(false);
-    const contentNode = this.#chatbotView.createStreamingBotMessage();
-    const response = this.#promptService.prompt(userMsg);
 
-    let fullResponse = "";
-    let lastMessage = "noop";
+    try {
+      this.#abortController = new AbortController();
+      const contentNode = this.#chatbotView.createStreamingBotMessage();
+      const response = this.#promptService.prompt(
+        userMsg,
+        this.#abortController.signal
+      );
 
-    const updateText = () => {
-      if (!fullResponse) return;
-      if (fullResponse === lastMessage) return;
-      lastMessage = fullResponse;
+      let fullResponse = "";
+      let lastMessage = "noop";
+
+      const updateText = () => {
+        if (!fullResponse) return;
+        if (fullResponse === lastMessage) return;
+        lastMessage = fullResponse;
+        this.#chatbotView.hideTypingIndicator();
+        this.#chatbotView.updateStreamingBotMessage(contentNode, fullResponse);
+      };
+
+      const intervalId = setInterval(updateText, 100);
+      const stopGenerating = () => {
+        clearInterval(intervalId);
+        updateText();
+        this.#chatbotView.setInputEnabled(true);
+      };
+
+      this.#abortController.signal.addEventListener("abort", stopGenerating());
+
+      for await (const chunk of response) {
+        if (!chunk) continue;
+        fullResponse += chunk;
+      }
+      stopGenerating();
+    } catch (error) {
       this.#chatbotView.hideTypingIndicator();
-      this.#chatbotView.updateStreamingBotMessage(contentNode, fullResponse);
-    };
-
-    const intervalId = setInterval(updateText, 100);
-    const stopgGenerating = () => {
-      clearInterval(intervalId);
-      updateText();
+      if (error.name === "AbortError") {
+        return;
+      }
+      this.#chatbotView.appendBotMessage(
+        `⚠️ Ocorreu um erro: ${error.message}`
+      );
       this.#chatbotView.setInputEnabled(true);
-    };
-
-    for await (const chunk of response) {
-      if (!chunk) continue;
-      fullResponse += chunk;
     }
-    stopgGenerating();
   }
 
   async #onOpen() {
